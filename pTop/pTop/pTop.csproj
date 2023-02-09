@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
-    <ApplicationIcon />
+    <ApplicationIcon>pTopIcon.ico</ApplicationIcon>
     <StartupObject></StartupObject>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
