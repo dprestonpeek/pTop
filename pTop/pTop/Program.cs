@@ -18,7 +18,7 @@ namespace pTop
         static ContextMenuStrip windowMenu = new ContextMenuStrip();
         static ContextMenuStrip pTopMenu = new ContextMenuStrip();
 
-        static string soundFiles = @"../../../../../Sounds";
+        static string soundFiles = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "pNoiseSounds");
         static string currentSelected = "";
 
         static SoundPlayer player = new SoundPlayer("player");
