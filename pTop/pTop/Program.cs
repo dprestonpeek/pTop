@@ -6,33 +6,22 @@ using System.Text;
 using HWND = System.IntPtr;
 using System.Drawing;
 using System.Threading;
+using System.IO;
+using System.Media;
 
 namespace pTop
 {
     class Program
     {
-        [DllImport("user32.dll")]
-        static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern UInt32 GetWindowLong(IntPtr hWnd, IntPtr nIndex);
-        
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-
-        static readonly IntPtr GWL_EXSTYLE = new IntPtr(-20);
-        static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
-        static readonly UInt32 WS_EX_TOPMOST = 0x0008;
-        static readonly UInt32 SWP_NOSIZE = 0x0001;
-        static readonly UInt32 SWP_NOMOVE = 0x0002;
-        static readonly UInt32 SWP_SHOWWINDOW = 0x0040;
-        static readonly byte HighBit = 0x80;
-
         static ManualResetEvent _quitEvent = new ManualResetEvent(false);
         static NotifyIcon notifyIcon = new NotifyIcon();
         static ContextMenuStrip windowMenu = new ContextMenuStrip();
         static ContextMenuStrip pTopMenu = new ContextMenuStrip();
+
+        static string soundFiles = @"../../../../../Sounds";
+        static string currentSelected = "";
+
+        static SoundPlayer player = new SoundPlayer("player");
 
         static void Main(string[] args)
         {
@@ -51,29 +40,19 @@ namespace pTop
             {
                 notifyIcon.ContextMenuStrip = windowMenu;
                 windowMenu.Items.Clear();
-                foreach (KeyValuePair<System.IntPtr, string> window in OpenWindowGetter.GetOpenWindows())
+                foreach (string file in Directory.GetFiles(soundFiles))
                 {
-                    string displayName = window.Value;
-                    if (displayName == "Windows Input Experience")
-                    {
-                        SetTopMost(window.Key, true);
-                        continue;
-                    }
-                    if (displayName.Length > 50)
-                    {
-                        displayName = displayName.Substring(0, 50);
-                        displayName += "...";
-                    }
+                    string displayName = Path.GetFileNameWithoutExtension(file);
                     ToolStripMenuItem item = (ToolStripMenuItem)windowMenu.Items.Add(displayName);
                     item.Click += ClickedItem;
-                    item.Checked = IsTopMost(window.Key);
+                    item.Checked = IsSelected(displayName);
                 }
                 ToolStripMenuItem divider = (ToolStripMenuItem)windowMenu.Items.Add("____________");
                 divider.Enabled = false;
                 ToolStripMenuItem close = (ToolStripMenuItem)windowMenu.Items.Add("Close Menu");
                 close.Name = "Close";
                 close.Click += ClickedItem;
-                ToolStripMenuItem quit = (ToolStripMenuItem)windowMenu.Items.Add("Quit pTop");
+                ToolStripMenuItem quit = (ToolStripMenuItem)windowMenu.Items.Add("Quit pNoise");
                 quit.Name = "Quit";
                 quit.Click += ClickedItem;
                 windowMenu.Show(new Point(Cursor.Position.X, Cursor.Position.Y));
@@ -82,38 +61,45 @@ namespace pTop
 
         private static void ClickedItem(object sender, EventArgs e)
         {
-            ToolStripMenuItem window = (ToolStripMenuItem)sender;
-            if (window.Name == "Close")
+            ToolStripMenuItem option = (ToolStripMenuItem)sender;
+            if (option.Name == "Close")
             {
                 return;
             }
-            else if (window.Name == "Quit")
+            else if (option.Name == "Quit")
             {
                 Application.Exit();
+                return;
             }
 
-            IntPtr hwnd = FindWindow(null, window.Text);
-
-            ToggleTopMost(hwnd);
-            //window.Checked = true;
+            foreach (string file in Directory.GetFiles(soundFiles))
+            {
+                string displayName = Path.GetFileNameWithoutExtension(file);
+                if (displayName == option.Text)
+                {
+                    //stop playing
+                    if (currentSelected == displayName)
+                    {
+                        player.Stop();
+                        currentSelected = "";
+                    }
+                    else //start playing
+                    {
+                        currentSelected = displayName;
+                        player.SoundLocation = file;
+                        player.PlayLooping();
+                    }
+                }
+            }
         }
 
-        public static bool IsTopMost(IntPtr hwnd)
+        private static bool IsSelected(string filename)
         {
-            return (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
-        }
-
-        public static bool ToggleTopMost(IntPtr hwnd)
-        {
-            bool now_topmost = IsTopMost(hwnd);
-
-            SetTopMost(hwnd, !now_topmost);
-            return !now_topmost;
-        }
-
-        public static void SetTopMost(IntPtr hwnd, bool topmost)
-        {
-            SetWindowPos(hwnd, topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            if (currentSelected == filename)
+            {
+                return true;
+            }
+            return false;
         }
     }
 
