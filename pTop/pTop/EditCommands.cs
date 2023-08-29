@@ -69,6 +69,8 @@ namespace pScript
                 DisplayTextBox.Text = "";
                 CommandTextBox.Text = "";
                 TogglableCheckbox.Checked = false;
+                ReorderUp.Enabled = true;
+                ReorderDown.Enabled = true;
             }
         }
 
@@ -81,6 +83,8 @@ namespace pScript
             DisplayTextBox.Text = "";
             CommandTextBox.Text = "";
             TogglableCheckbox.Checked = false;
+            ReorderUp.Enabled = false;
+            ReorderDown.Enabled = false;
             editing = false;
         }
 
@@ -122,6 +126,7 @@ namespace pScript
             Commands.commandList[CommandList.SelectedIndex] = newCommand;
             Program.SaveCommands();
             DisableEditing();
+            RefreshList();
         }
 
         private void OKButton_Click(object sender, EventArgs e)
@@ -160,13 +165,14 @@ namespace pScript
         private void ReorderUp_Click(object sender, EventArgs e)
         {
             int index = CommandList.SelectedIndex;
-            if (index != 0)
+            if (index > 0)
             {
                 Command cmdToMove = Commands.commandList[index];
-                Command temp = cmdToMove;
-                cmdToMove = Commands.commandList[index - 1];
-                Commands.commandList[index - 1] = temp;
+                Command temp = Commands.commandList[index - 1];
+                Commands.commandList[index - 1] = cmdToMove;
+                Commands.commandList[index] = temp;
                 RefreshList();
+                DisableEditing();
             }
         }
 
@@ -176,10 +182,11 @@ namespace pScript
             if (index != CommandList.Items.Count - 1)
             {
                 Command cmdToMove = Commands.commandList[index];
-                Command temp = cmdToMove;
-                cmdToMove = Commands.commandList[index + 1];
-                Commands.commandList[index + 1] = temp;
+                Command temp = Commands.commandList[index + 1];
+                Commands.commandList[index + 1] = cmdToMove;
+                Commands.commandList[index] = temp;
                 RefreshList();
+                DisableEditing();
             }
         }
 
