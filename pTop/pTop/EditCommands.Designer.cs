@@ -78,9 +78,9 @@ namespace pScript
             this.TogglableCheckbox.Enabled = false;
             this.TogglableCheckbox.Location = new System.Drawing.Point(12, 280);
             this.TogglableCheckbox.Name = "TogglableCheckbox";
-            this.TogglableCheckbox.Size = new System.Drawing.Size(147, 19);
+            this.TogglableCheckbox.Size = new System.Drawing.Size(150, 19);
             this.TogglableCheckbox.TabIndex = 9;
-            this.TogglableCheckbox.Text = "This action is togglable";
+            this.TogglableCheckbox.Text = "This action is togglable ";
             this.TogglableCheckbox.UseVisualStyleBackColor = true;
             this.TogglableCheckbox.CheckedChanged += new System.EventHandler(this.TogglableCheckbox_CheckedChanged);
             // 

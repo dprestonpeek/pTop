@@ -46,6 +46,7 @@ namespace pScript
             else if (aboutToAdd)
             {
                 adding = true;
+                aboutToAdd = false;
             }
             else
             {

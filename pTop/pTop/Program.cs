@@ -39,7 +39,7 @@ namespace pScript
             }
             else
             {
-                File.Create(cmdFile);
+                File.WriteAllText(cmdFile, "");
             }
 
             Application.Run();
@@ -80,7 +80,7 @@ namespace pScript
                     string displayName = command.displayText;
                     ToolStripMenuItem item = (ToolStripMenuItem)commandMenu.Items.Add(displayName);
                     item.Click += ClickedItem;
-                    item.Checked = IsSelected(displayName);
+                    item.Checked = command.isOn;
                 }
                 ToolStripMenuItem divider = (ToolStripMenuItem)commandMenu.Items.Add("____________");
                 divider.Enabled = false;
