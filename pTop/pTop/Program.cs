@@ -9,19 +9,20 @@ using System.Threading;
 using System.IO;
 using System.Media;
 
-namespace pTop
+namespace pScript
 {
     class Program
     {
+        static string programName = "pScript";
+
+        static string cmdFile = "commands.txt";
+
         static ManualResetEvent _quitEvent = new ManualResetEvent(false);
         static NotifyIcon notifyIcon = new NotifyIcon();
-        static ContextMenuStrip windowMenu = new ContextMenuStrip();
+        static ContextMenuStrip commandMenu = new ContextMenuStrip();
         static ContextMenuStrip pTopMenu = new ContextMenuStrip();
 
-        static string soundFiles = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "pNoiseSounds");
         static string currentSelected = "";
-
-        static SoundPlayer player = new SoundPlayer("player");
 
         static void Main(string[] args)
         {
@@ -29,39 +30,80 @@ namespace pTop
             notifyIcon.Visible = true;
             notifyIcon.Text = Application.ProductName;
             notifyIcon.MouseClick += OpenContextMenu;
-            windowMenu.ShowCheckMargin = true;
+            commandMenu.ShowCheckMargin = true;
+
+            //if commands exist, load them, else create new file
+            if (File.Exists(cmdFile))
+            {
+                LoadCommands();
+            }
+            else
+            {
+                File.Create(cmdFile);
+            }
 
             Application.Run();
+        }
+
+        public static void LoadCommands()
+        {
+            string commandText = File.ReadAllText(cmdFile);
+            string[] commands = commandText.Split('~');
+            for (int i = 0; i < commands.Length - 1; i += 3)
+            {
+                Commands.commandList.Add(new Command(commands[i], commands[i + 1], bool.Parse(commands[i + 2])));
+            }
+        }
+
+        public static void SaveCommands()
+        {
+            string saveText = "";
+            foreach (Command cmd in Commands.commandList)
+            {
+                saveText += cmd.displayText + "~" + cmd.commandText + "~" + cmd.togglable;
+                if (cmd.displayText != Commands.commandList[Commands.commandList.Count - 1].displayText)
+                {
+                    saveText += "~";
+                }
+            }
+            File.WriteAllText(cmdFile, saveText);
         }
 
         private static void OpenContextMenu(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                notifyIcon.ContextMenuStrip = windowMenu;
-                windowMenu.Items.Clear();
-                foreach (string file in Directory.GetFiles(soundFiles))
+                notifyIcon.ContextMenuStrip = commandMenu;
+                commandMenu.Items.Clear();
+                foreach (Command command in Commands.commandList)
                 {
-                    string displayName = Path.GetFileNameWithoutExtension(file);
-                    ToolStripMenuItem item = (ToolStripMenuItem)windowMenu.Items.Add(displayName);
+                    string displayName = command.displayText;
+                    ToolStripMenuItem item = (ToolStripMenuItem)commandMenu.Items.Add(displayName);
                     item.Click += ClickedItem;
                     item.Checked = IsSelected(displayName);
                 }
-                ToolStripMenuItem divider = (ToolStripMenuItem)windowMenu.Items.Add("____________");
+                ToolStripMenuItem divider = (ToolStripMenuItem)commandMenu.Items.Add("____________");
                 divider.Enabled = false;
-                ToolStripMenuItem close = (ToolStripMenuItem)windowMenu.Items.Add("Close Menu");
+                ToolStripMenuItem editCommand = (ToolStripMenuItem)commandMenu.Items.Add("Edit Commands...");
+                editCommand.Name = "Edit";
+                editCommand.Click += ClickedItem;
+                ToolStripMenuItem close = (ToolStripMenuItem)commandMenu.Items.Add("Close Menu");
                 close.Name = "Close";
                 close.Click += ClickedItem;
-                ToolStripMenuItem quit = (ToolStripMenuItem)windowMenu.Items.Add("Quit pNoise");
+                ToolStripMenuItem quit = (ToolStripMenuItem)commandMenu.Items.Add("Quit " + programName);
                 quit.Name = "Quit";
                 quit.Click += ClickedItem;
-                windowMenu.Show(new Point(Cursor.Position.X, Cursor.Position.Y));
+                commandMenu.Show(new Point(Cursor.Position.X, Cursor.Position.Y));
             }
         }
 
         private static void ClickedItem(object sender, EventArgs e)
         {
             ToolStripMenuItem option = (ToolStripMenuItem)sender;
+            if (option.Name == "Edit")
+            {
+                new EditCommands().ShowDialog();
+            }
             if (option.Name == "Close")
             {
                 return;
@@ -72,30 +114,20 @@ namespace pTop
                 return;
             }
 
-            foreach (string file in Directory.GetFiles(soundFiles))
+            foreach (Command command in Commands.commandList)
             {
-                string displayName = Path.GetFileNameWithoutExtension(file);
+                string displayName = command.displayText;
                 if (displayName == option.Text)
                 {
-                    //stop playing
-                    if (currentSelected == displayName)
-                    {
-                        player.Stop();
-                        currentSelected = "";
-                    }
-                    else //start playing
-                    {
-                        currentSelected = displayName;
-                        player.SoundLocation = file;
-                        player.PlayLooping();
-                    }
+                    //Do command here
+                    Commands.FireCommand(displayName);
                 }
             }
         }
 
-        private static bool IsSelected(string filename)
+        private static bool IsSelected(string action)
         {
-            if (currentSelected == filename)
+            if (currentSelected == action)
             {
                 return true;
             }
