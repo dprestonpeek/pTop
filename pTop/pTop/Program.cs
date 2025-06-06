@@ -45,6 +45,24 @@ namespace pTop
             Application.Run();
         }
 
+        public static bool IsTopMost(IntPtr hwnd)
+        {
+            return (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
+        }
+
+        public static bool ToggleTopMost(IntPtr hwnd)
+        {
+            bool now_topmost = IsTopMost(hwnd);
+
+            SetTopMost(hwnd, !now_topmost);
+            return !now_topmost;
+        }
+
+        public static void SetTopMost(IntPtr hwnd, bool topmost)
+        {
+            SetWindowPos(hwnd, topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        }
+
         private static void OpenContextMenu(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
@@ -96,24 +114,6 @@ namespace pTop
 
             ToggleTopMost(hwnd);
             //window.Checked = true;
-        }
-
-        public static bool IsTopMost(IntPtr hwnd)
-        {
-            return (GetWindowLong(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST) != 0;
-        }
-
-        public static bool ToggleTopMost(IntPtr hwnd)
-        {
-            bool now_topmost = IsTopMost(hwnd);
-
-            SetTopMost(hwnd, !now_topmost);
-            return !now_topmost;
-        }
-
-        public static void SetTopMost(IntPtr hwnd, bool topmost)
-        {
-            SetWindowPos(hwnd, topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
         }
     }
 
