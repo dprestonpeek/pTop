@@ -20,6 +20,9 @@ namespace pTop
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
 
+        [DllImport("user32.dll")]
+        static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
         static readonly IntPtr GWL_EXSTYLE = new IntPtr(-20);
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
@@ -33,6 +36,8 @@ namespace pTop
         static NotifyIcon notifyIcon = new NotifyIcon();
         static ContextMenuStrip windowMenu = new ContextMenuStrip();
         static ContextMenuStrip pTopMenu = new ContextMenuStrip();
+
+        static Dictionary<string, string> longWindowNames = new Dictionary<string, string>();
 
         static void Main(string[] args)
         {
@@ -60,7 +65,16 @@ namespace pTop
 
         public static void SetTopMost(IntPtr hwnd, bool topmost)
         {
-            SetWindowPos(hwnd, topmost ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            RECT rt = new RECT();
+            int x = 0, y = 0, width = 0, height = 0;
+            if (GetWindowRect(hwnd, out rt))
+            {
+                x = rt.Left;
+                y = rt.Top;
+                width = rt.Right - rt.Left;
+                height = rt.Bottom - rt.Top;
+            }
+            SetWindowPos(hwnd, topmost ? HWND_TOPMOST : HWND_NOTOPMOST, x, y, width, height, topmost ? WS_EX_TOPMOST : SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
         }
 
         private static void OpenContextMenu(object sender, MouseEventArgs e)
@@ -69,6 +83,9 @@ namespace pTop
             {
                 notifyIcon.ContextMenuStrip = windowMenu;
                 windowMenu.Items.Clear();
+                longWindowNames.Clear();
+
+                Dictionary<string, int> duplicates = new Dictionary<string, int>();
                 foreach (KeyValuePair<System.IntPtr, string> window in OpenWindowGetter.GetOpenWindows())
                 {
                     string displayName = window.Value;
@@ -77,11 +94,31 @@ namespace pTop
                         SetTopMost(window.Key, true);
                         continue;
                     }
+
+                    // if name is long, we'll want to save the original
+                    string longName = displayName;
                     if (displayName.Length > 50)
                     {
                         displayName = displayName.Substring(0, 50);
                         displayName += "...";
                     }
+
+                    // add name to list to keep track of long names
+                    if (longWindowNames.ContainsKey(displayName))
+                    {
+                        // check if a duplicate already exists
+                        if (duplicates.ContainsKey(displayName))
+                        {
+                            duplicates[displayName]++;
+                        }
+                        else
+                        {
+                            duplicates.Add(displayName, 1);
+                        }
+                        displayName += " (" + duplicates[displayName] + ")";
+                    }
+                    longWindowNames.Add(displayName, longName);
+
                     ToolStripMenuItem item = (ToolStripMenuItem)windowMenu.Items.Add(displayName);
                     item.Click += ClickedItem;
                     item.Checked = IsTopMost(window.Key);
@@ -110,10 +147,10 @@ namespace pTop
                 Application.Exit();
             }
 
-            IntPtr hwnd = FindWindow(null, window.Text);
+            longWindowNames.TryGetValue(window.Text, out string windowText);
+            IntPtr hwnd = FindWindow(null, windowText);
 
             ToggleTopMost(hwnd);
-            //window.Checked = true;
         }
     }
 
@@ -164,3 +201,13 @@ public static class OpenWindowGetter
         private static extern IntPtr GetShellWindow();
     }
 }
+
+[StructLayout(LayoutKind.Sequential)]
+public struct RECT
+{
+    public int Left;        // x position of upper-left corner
+    public int Top;         // y position of upper-left corner
+    public int Right;       // x position of lower-right corner
+    public int Bottom;      // y position of lower-right corner
+}
+
